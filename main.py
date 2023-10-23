@@ -128,7 +128,7 @@ def get_asset_comments():
 
 # Create a simple GUI using Tkinter
 root = tk.Tk()
-root.title("Frame.io Comment Downloader")
+root.title("Frame.io Assets Downloader")
 
 # Labels and Entry fields
 tk.Label(root, text="Asset ID:").pack(pady=(10, 0))
