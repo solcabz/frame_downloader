@@ -5,6 +5,9 @@ import os
 import tkinter as tk
 from tkinter import filedialog
 
+# Define a global queue to store asset IDs
+asset_id_queue = []
+
 def get_asset_name(asset_id, token):
     url = f"https://api.frame.io/v2/assets/{asset_id}"
     headers = {"Authorization": f"Bearer {token}"}
@@ -99,48 +102,147 @@ def download_original_asset(asset_id, token, directory_path):
     else:
         print(f"Error getting asset information. Status code: {response.status_code}")
 
-def get_asset_comments():
+def create_folder(asset_name):
+    # Create a folder with the asset name in 'C:\Downloads'
+    folder_path = os.path.join('F:\\Downloads\Frame_ioDownloadFiles'  ,asset_name)
+    os.makedirs(folder_path, exist_ok=True)
+    return folder_path
+
+def add_asset_to_queue():
     asset_id = asset_id_entry.get()
-    token = "fio-u-KJkLXQoOUTNECbWLrqUrOttbODo24OHQshin_4TpJy3t8_G8L1KOpx0SR-MkcqkP"
-    asset_name = get_asset_name(asset_id, token)
+    if asset_id:
+        asset_id_queue.append(asset_id)
+        queue_listbox.insert(tk.END, asset_id)
+        asset_id_entry.delete(0, tk.END)
 
-    if asset_name is not None:
-        # Prompt user to choose a directory
-        directory_path = filedialog.askdirectory()
+def process_queue():
+    token_1 = "fio-u-LVdUIB1ObqZS724Ov-vgR8GaZmnf3ElrNmQ9JT2iT7UFzz1FvkFlgfk9xiyBcDun"
+    token_2 = "fio-u-SdwWJMiLPq1cD5cHkBlhlBELKS8wo6PHevhJYDQ6Gs4WJvpeWOS0gdmJWKFJYJfT"
 
-        if directory_path:
-            # Download original asset
-            download_original_asset(asset_id, token, directory_path)
+    while asset_id_queue:
+        asset_id = asset_id_queue.pop(0)
+        asset_name = get_asset_name(asset_id, token_1)
 
-            # Get comments
-            all_comments = get_all_comments(asset_id, token)
+        if asset_name is None:
+            asset_name = get_asset_name(asset_id, token_2)
 
-            # Save comments to file
-            file_path = os.path.join(directory_path, f"{asset_name}_comments")
+        if asset_name is not None:
+            folder_path = create_folder(asset_name)
+
+            download_original_asset(asset_id, token_1, folder_path)  # You can use token_2 here if needed
+            all_comments = get_all_comments(asset_id, token_1)  # You can use token_2 here if needed
+
+            file_path = os.path.join(folder_path, f"{asset_name}_comments")
             save_comments_to_file(all_comments, file_path)
 
-            # Display results
             result_label.config(text=f"Assets saved to {file_path}")
         else:
-            result_label.config(text="No directory selected. Files not saved.")
-    else:
-        result_label.config(text="Could not retrieve asset name. Files not saved.")
+            result_label.config(text="Could not retrieve asset name. Files not saved.")
+
+def remove_asset_from_queue():
+    selected_index = queue_listbox.curselection()
+
+    if selected_index:
+        selected_asset_id = queue_listbox.get(selected_index)
+        asset_id_queue.remove(selected_asset_id)
+        queue_listbox.delete(selected_index)
+
+def clear_queue():
+    queue_listbox.delete(0, tk.END)  # Delete all items from the listbox
+    asset_id_queue.clear()  # Clear the global asset_id_queue list
 
 # Create a simple GUI using Tkinter
 root = tk.Tk()
+root.geometry('650x480')
+root.resizable(width=False, height=False)
 root.title("Frame.io Assets Downloader")
+root.configure(bg='#3D3A3A')
+
+color1 = '#020f12'
+color2 = '#F4A125'
+color3 = '#EABF7F'
+color4 = '#BE7303'
+color5 = 'BLACK'
 
 # Labels and Entry fields
-tk.Label(root, text="Asset ID:").pack(pady=(10, 0))
-asset_id_entry = tk.Entry(root)
+tk.Label(root, text="Asset ID:", background='#3D3A3A', foreground='WHITE').pack(pady=(10, 0))
+asset_id_entry = tk.Entry(root, width=18, font=('Arial', 12), background='#D9D9D9')
 asset_id_entry.pack(pady=(0, 10))
 
-# Button to trigger the comment download
-download_button = tk.Button(root, text="Download Comments", command=get_asset_comments)
-download_button.pack(pady=(10, 20))
+button_frame = tk.Frame(root, background='#3D3A3A')
+button_frame.pack()
+
+# Button to add asset to queue
+add_to_queue_button = tk.Button(button_frame,
+                                background=color2,
+                                activebackground=color3,
+                                width='18', height=2,
+                                highlightbackground=color4,
+                                highlightthickness=2,
+                                highlightcolor='WHITE',
+                                border=0,
+                                cursor='hand2',
+                                font=('Arial'),
+                                text="Add to Queue",
+                                command=add_asset_to_queue)
+add_to_queue_button.pack(side='left', padx=(0, 5))
+
+# Button to remove asset from queue
+remove_from_queue_button = tk.Button(button_frame,
+                                     background=color2,
+                                     activebackground=color3,
+                                     width='18', height=2,
+                                     highlightbackground=color4,
+                                     highlightthickness=2,
+                                     highlightcolor='WHITE',
+                                     border=0,
+                                     cursor='hand2',
+                                     font=('Arial'),
+                                     text="Remove from Queue",
+                                     command=remove_asset_from_queue)
+remove_from_queue_button.pack(side='right', padx=(5, 0))
+
+
+tk.Label(root, text="Asset ID List:", background='#3D3A3A', foreground='WHITE').pack(pady=(10, 0))
+# Listbox to display the queue
+queue_listbox = tk.Listbox(root, width=70, background='#D9D9D9')
+queue_listbox.pack(pady=(10, 20))
+
+button_frame2 = tk.Frame(root, background='#3D3A3A')
+button_frame2.pack()
+
+# Button to start processing queue
+process_queue_button = tk.Button(button_frame2,
+                                 background=color2,
+                                 activebackground=color3,
+                                 width='18', height=2,
+                                 highlightbackground=color4,
+                                 highlightthickness=2,
+                                 highlightcolor='WHITE',
+                                 border=0,
+                                 cursor='hand2',
+                                 font=('Arial'),
+                                 text="Process Queue",
+                                 command=process_queue)
+process_queue_button.pack(side='left', padx=(5, 5))
+
+# Button to clear the queue
+clear_queue_button = tk.Button(button_frame2,
+                               background=color2,
+                               activebackground=color3,
+                               width='18', height=2,
+                               highlightbackground=color4,
+                               highlightthickness=2,
+                               highlightcolor='WHITE',
+                               border=0,
+                               cursor='hand2',
+                               font=('Arial'),
+                               text="Clear All Queue",
+                               command=clear_queue)
+clear_queue_button.pack(side='right', padx=(5, 5))
 
 # Label to display result
-result_label = tk.Label(root, text="")
+result_label = tk.Label(root, text="", foreground='WHITE', background='#3D3A3A')
 result_label.pack()
 
 root.mainloop()
