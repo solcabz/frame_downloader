@@ -315,6 +315,7 @@ mode = loading_indicator.cget("mode")
 print(f"The current mode is: {mode}")
 value = loading_indicator.get()
 loading_indicator.grid(row=3, column=0, pady=(0, 0))
+loading_indicator.configure(width=565)
 
 result_label = ctk.CTkLabel(window, text="", cursor="hand2")
 result_label.grid(row=4, column=0, padx=20, pady=(0, 20))
